@@ -2,7 +2,7 @@
 
 ## Project 1 : MapReduce
 
-### Due Date: Feb 17th, 2023 (at midnight)
+### Due Date: Feb 17th (at midnight)
 
 Please navigate to `mr` directory for detailed instructions regarding MapReduce assignment.
 
