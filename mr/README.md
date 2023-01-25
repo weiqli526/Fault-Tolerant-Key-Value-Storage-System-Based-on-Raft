@@ -1,7 +1,7 @@
 
 # Project 1: MapReduce
 
-## Due Date: .. Feb 2023
+### Due Date: Feb 17th, 2023 (at midnight)
 
 ## Introduction
 
