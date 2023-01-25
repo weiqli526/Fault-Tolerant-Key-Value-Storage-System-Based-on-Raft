@@ -8,4 +8,4 @@ Please navigate to `mr` directory for detailed instructions regarding MapReduce 
 
 ## Project 2 : Raft
 
-**Coming soon**
+Coming soon
