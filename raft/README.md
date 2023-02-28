@@ -37,6 +37,8 @@ Test (2A): election after network failure ...
 ...
 ```
 
+To run a specific set of tests, use `go test -race -run 2A` or `go test -race -run TestInitialElection2A`.
+
 ## The Code
 
 Implement Raft by adding code to `raft/raft.go`. In that file you'll find skeleton code, plus examples of how to send and receive RPCs.
