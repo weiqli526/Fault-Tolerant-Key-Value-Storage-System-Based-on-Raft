@@ -1,6 +1,6 @@
 # Project 2: Raft
 
-### Part 2A Due Date: March 22 (11:59 PM)
+### Part 2A Due Date: March 24 (11:59 PM)
 ### Part 2B Due Date: April 12 (11:59 PM)
 ### Part 2C Due Date: April 26 (11:59 PM)
 ### Part 2D Due Date: May 3 (11:59 PM)
