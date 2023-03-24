@@ -2,7 +2,7 @@
 
 ### Part 2A Due Date: March 24 (11:59 PM)
 ### Part 2B Due Date: April 14 (11:59 PM)
-### Part 2C Due Date: April 26 (11:59 PM)
+### Part 2C Due Date: April 28 (11:59 PM)
 ### Part 2D Due Date: May 3 (11:59 PM)
 
 ## Introduction
