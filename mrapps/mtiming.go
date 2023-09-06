@@ -8,7 +8,7 @@ package main
 //
 
 import (
-	"cs350/mr"
+	"cs651/mr"
 	"fmt"
 	"io/ioutil"
 	"os"
