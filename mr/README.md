@@ -8,28 +8,28 @@ In this lab you'll build a MapReduce system. You'll implement a worker process t
 
 ## Collaboration Policy
 
-You must write all the code you hand in for CS 350, except for code that we give you as part of assignments. You are not allowed to look at anyone else's solution, and you are not allowed to look at solutions from previous years. You may discuss the assignments with other students, but you may not look at or copy each others' code. The reason for this rule is that we believe you will learn the most by designing and implementing your lab solution yourself.
+You must write all the code you hand in for CS 651, except for code that we give you as part of assignments. You are not allowed to look at anyone else's solution, and you are not allowed to look at solutions from previous years. You may discuss the assignments with other students, but you may not look at or copy each others' code. The reason for this rule is that we believe you will learn the most by designing and implementing your lab solution yourself.
 
-Please do not publish your code or make it available to current or future CS 350 students. github.com repositories are public by default, so please don't put your code there unless you make the repository private.
+Please do not publish your code or make it available to current or future CS 651 students. github.com repositories are public by default, so please don't put your code there unless you make the repository private.
 
 ## Software
 
-You'll implement this lab (and all the labs) in Go. The Go web site contains lots of tutorial information. We will grade your labs using Go version 1.13; you should use Go version 1.13 or higher. You can check your Go version by running `go version`. Please follow lab 1 slides for Go setup (posted on Piazza).
+You'll implement this lab (and all the labs) in Go. The Go web site contains lots of tutorial information. We will grade your labs using Go version 1.18; you should use Go version 1.15 or higher. You can check your Go version by running `go version`. Please follow lab 1 slides for Go setup (posted on Piazza).
 
 We recommend that you work on the labs on your own machine, so you can use the tools, text editors, etc. that you are already familiar with. Alternatively, you can work on the csa machines.
 
 ## Getting started
 
-You'll fetch the initial lab software with [git](https://git-scm.com/) (a version control system). To learn more about git, look at the [Pro Git](https://git-scm.com/book/en/v2) book or the [git user's manual](http://www.kernel.org/pub/software/scm/git/docs/user-manual.html). To fetch the CS 350 starter code:
+You'll fetch the initial lab software with [git](https://git-scm.com/) (a version control system). To learn more about git, look at the [Pro Git](https://git-scm.com/book/en/v2) book or the [git user's manual](http://www.kernel.org/pub/software/scm/git/docs/user-manual.html). To fetch the CS 651 starter code:
 
 ```
-$ git clone git@cs350-gitlab.bu.edu:s23/code.git
+$ git clone git@cs651-gitlab.bu.edu:s23/code.git
 ```
 
-We supply you with a simple sequential mapreduce implementation in `main/mrsequential.go`. It runs the maps and reduces one at a time, in a single process. We also provide you with a couple of MapReduce applications: word-count in `mrapps/wc.go`, and a text indexer in `mrapps/indexer.go`. You can run word count sequentially as follows:
+We supply you with a simple sequential mapreduce implementation in `mr-main/mrsequential.go`. It runs the maps and reduces one at a time, in a single process. We also provide you with a couple of MapReduce applications: word-count in `mrapps/wc.go`, and a text indexer in `mrapps/indexer.go`. You can run word count sequentially as follows:
 
 ```
-$ cd main
+$ cd mr-main
 $ go build -buildmode=plugin ../mrapps/wc.go
 $ rm mr-out*
 $ go run mrsequential.go wc.so pg*.txt
@@ -48,7 +48,7 @@ Feel free to borrow code from `mrsequential.go`. You should also have a look at 
 
 Your job is to implement a distributed MapReduce, consisting of two programs, the coordinator and the worker. There will be just one coordinator process, and one or more worker processes executing in parallel. In a real system the workers would run on a bunch of different machines, but for this lab you'll run them all on a single machine. The workers will talk to the coordinator via RPC. Each worker process will ask the coordinator for a task, read the task's input from one or more files, execute the task, and write the task's output to one or more files. The coordinator should notice if a worker hasn't completed its task in a reasonable amount of time (for this lab, use ten seconds), and give the same task to a different worker.
 
-We have given you a little code to start you off. The "main" routines for the coordinator and worker are in `main/mrcoordinator.go` and `main/mrworker.go`; **don't change these files**. You should put your implementation in `mr/coordinator.go`, `mr/worker.go`, and `mr/rpc.go`.
+We have given you a little code to start you off. The "main" routines for the coordinator and worker are in `mr-main/mrcoordinator.go` and `mr-main/mrworker.go`; **don't change these files**. You should put your implementation in `mr/coordinator.go`, `mr/worker.go`, and `mr/rpc.go`.
 
 Here's how to run your code on the word-count MapReduce application. First, make sure the word-count plugin is freshly built:
 
@@ -56,7 +56,7 @@ Here's how to run your code on the word-count MapReduce application. First, make
 $ go build -buildmode=plugin ../mrapps/wc.go
 ```
 
-In the `main` directory, run the coordinator.
+In the `mr-main` directory, run the coordinator.
 
 ```
 $ rm mr-out*
@@ -81,12 +81,12 @@ ACT 8
 ...
 ```
 
-We supply you with a test script in `main/test-mr.sh`. The tests check that the `wc` and `indexer` MapReduce applications produce the correct output when given the `pg-xxx.txt` files as input. The tests also check that your implementation runs the Map and Reduce tasks in parallel, and that your implementation recovers from workers that crash while running tasks.
+We supply you with a test script in `mr-main/test-mr.sh`. The tests check that the `wc` and `indexer` MapReduce applications produce the correct output when given the `pg-xxx.txt` files as input. The tests also check that your implementation runs the Map and Reduce tasks in parallel, and that your implementation recovers from workers that crash while running tasks.
 
 If you run the test script now, it will hang because the coordinator never finishes:
 
 ```
-$ cd main
+$ cd mr-main
 $ bash test-mr.sh
 *** Starting wc test.
 ```
@@ -130,12 +130,12 @@ You'll also see some errors from the Go RPC package that look like
 Ignore these messages.
 
 **A few rules**:
-* The map phase should divide the intermediate keys into buckets for `nReduce` reduce tasks, where `nReduce` is the argument that `main/mrcoordinator.go` passes to `MakeCoordinator()`.
+* The map phase should divide the intermediate keys into buckets for `nReduce` reduce tasks, where `nReduce` is the argument that `mr-main/mrcoordinator.go` passes to `MakeCoordinator()`.
 * The worker implementation should put the output of the X'th reduce task in the file `mr-out-X`.
-* A `mr-out-X` file should contain one line per Reduce function output. The line should be generated with the Go `"%v %v"` format, called with the key and value. Have a look in `main/mrsequential.go` for the line commented "this is the correct format". The test script will fail if your implementation deviates too much from this format.
+* A `mr-out-X` file should contain one line per Reduce function output. The line should be generated with the Go `"%v %v"` format, called with the key and value. Have a look in `mr-main/mrsequential.go` for the line commented "this is the correct format". The test script will fail if your implementation deviates too much from this format.
 * You can modify `mr/worker.go`, `mr/coordinator.go`, and `mr/rpc.go`. You can temporarily modify other files for testing, but make sure your code works with the original versions; we'll test with the original versions.
 * The worker should put intermediate Map output in files in the current directory, where your worker can later read them as input to Reduce tasks. 
-* `main/mrcoordinator.go` expects `mr/coordinator.go` to implement a `Done()` method that returns true when the MapReduce job is completely finished; at that point, `mrcoordinator.go` will exit.
+* `mr-main/mrcoordinator.go` expects `mr/coordinator.go` to implement a `Done()` method that returns true when the MapReduce job is completely finished; at that point, `mrcoordinator.go` will exit.
 * When the job is completely finished, the worker processes should exit. A simple way to implement this is to use the return value from `call()`: if the worker fails to contact the coordinator, it can assume that the coordinator has exited because the job is done, and so the worker can terminate too. Depending on your design, you might also find it helpful to have a "please exit" pseudo-task that the coordinator can give to workers.
 
 ## Hints

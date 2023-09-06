@@ -21,11 +21,11 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"cs350/labrpc"
+	"cs651/labrpc"
 )
 
 // import "bytes"
-// import "cs350/labgob"
+// import "cs651/labgob"
 
 // as each Raft peer becomes aware that successive log entries are
 // committed, the peer should send an ApplyMsg to the service (or

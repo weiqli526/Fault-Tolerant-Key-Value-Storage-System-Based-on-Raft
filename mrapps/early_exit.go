@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"cs350/mr"
+	"cs651/mr"
 )
 
 // The map function is called once for each file of input.

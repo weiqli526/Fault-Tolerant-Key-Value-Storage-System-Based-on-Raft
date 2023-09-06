@@ -10,7 +10,7 @@ package main
 
 import (
 	crand "crypto/rand"
-	"cs350/mr"
+	"cs651/mr"
 	"math/big"
 	"os"
 	"sort"

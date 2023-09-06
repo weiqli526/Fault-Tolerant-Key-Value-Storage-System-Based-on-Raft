@@ -7,7 +7,7 @@ package main
 //
 
 import (
-	"cs350/mr"
+	"cs651/mr"
 	"fmt"
 	"sort"
 	"strings"

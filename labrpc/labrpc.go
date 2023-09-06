@@ -51,7 +51,7 @@ package labrpc
 
 import (
 	"bytes"
-	"cs350/labgob"
+	"cs651/labgob"
 	"log"
 	"math/rand"
 	"reflect"
