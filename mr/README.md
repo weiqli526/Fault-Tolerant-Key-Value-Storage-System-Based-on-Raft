@@ -1,7 +1,5 @@
 # Project 1: MapReduce
 
-### Due Date: Feb 17th (at midnight)
-
 ## Introduction
 
 In this lab you'll build a MapReduce system. You'll implement a worker process that calls application Map and Reduce functions and handles reading and writing files, and a coordinator process that hands out tasks to workers and copes with failed workers. You'll be building something similar to the [MapReduce paper](http://static.googleusercontent.com/media/research.google.com/en//archive/mapreduce-osdi04.pdf).
@@ -23,7 +21,7 @@ We recommend that you work on the labs on your own machine, so you can use the t
 You'll fetch the initial lab software with [git](https://git-scm.com/) (a version control system). To learn more about git, look at the [Pro Git](https://git-scm.com/book/en/v2) book or the [git user's manual](http://www.kernel.org/pub/software/scm/git/docs/user-manual.html). To fetch the CS 651 starter code:
 
 ```
-$ git clone git@cs651-gitlab.bu.edu:s23/code.git
+$ git clone git@cs651-gitlab.bu.edu:f23/cs651-code.git
 ```
 
 We supply you with a simple sequential mapreduce implementation in `mr-main/mrsequential.go`. It runs the maps and reduces one at a time, in a single process. We also provide you with a couple of MapReduce applications: word-count in `mrapps/wc.go`, and a text indexer in `mrapps/indexer.go`. You can run word count sequentially as follows:

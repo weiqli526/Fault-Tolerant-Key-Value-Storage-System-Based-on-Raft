@@ -2,16 +2,9 @@
 
 ## Project 1 : MapReduce
 
-### Due Date: Sep 22th (at midnight)
-
 Please navigate to `mr` directory for detailed instructions regarding MapReduce assignment.
 
 ## Project 2 : Raft
-
-### Part A Due Date: TBD
-### Part B Due Date: TBD
-### Part C Due Date: TBD
-### Part D Due Date: TBD
 
 Please navigate to `raft` directory for detailed instructions regarding Raft assignment.
 
