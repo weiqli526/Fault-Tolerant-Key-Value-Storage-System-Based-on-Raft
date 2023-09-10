@@ -1,0 +1,4 @@
+PAPER QUESTION:
+What technique(s) can we use to mitigate stragglers in a MapReduce job?
+
+Answer: According to the paper, a straggler is a machine that takes an unusually long time to complete one of the last few map or reduce tasks in the computation. One way to mitigate stragglers in a MapReduce job is by using the backup task mechanism. That is, when a MapReduce operation is close to completion, the master schedules backup executions of the remaining in-progress tasks. The task is marked as completed whenever either the primary or the backup execution completes. We can probably use this mechanism again after a certain period of time in case that both the backup and primary machine are stragglers. To select the backup machines on a random basis would also be efficient in avoiding this potential issue.
