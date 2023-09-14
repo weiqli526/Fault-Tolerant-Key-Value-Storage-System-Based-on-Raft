@@ -69,7 +69,8 @@ In one or more other windows, run some workers:
 $ go run mrworker.go wc.so
 ```
 
-When the workers and coordinator have finished, look at the output in `mr-out-*`. When you've completed the lab, the sorted union of the output files should match the sequential output, like this:
+When the workers and coordinator have finished, look at the output in `mr-out-*`. When you've
+ completed the lab, the sorted union of the output files should match the sequential output, like this:
 
 ```
 $ cat mr-out-* | sort | more
@@ -175,7 +176,7 @@ and to read such a file back:
 
 **Important: Before submitting, please run `test-mr.sh` one final time.**
 
-Submit your solution by pushing your code to GitLab. To push code navigate to root directory of the code and run the following:
+Submit your solution by pushing your code to FitLab. To push code navigate to root directory of the code and run the following:
 
 ```
 $ git commit -m'<message>'
