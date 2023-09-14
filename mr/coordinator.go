@@ -176,8 +176,6 @@ func MakeCoordinator(files []string, nReduce int) *Coordinator {
 	c.isMapAccomplished = make([]bool, c.nMap)
 	c.isReduceAccomplished = make([]bool, c.nReduce)
 
-	c.isMapDone = true
-
 	c.server()
 	return &c
 }

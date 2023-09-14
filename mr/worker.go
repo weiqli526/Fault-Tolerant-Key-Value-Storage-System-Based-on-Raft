@@ -56,7 +56,7 @@ func Worker(mapf func(string, string) []KeyValue,
 		}
 		taskType := reply.TaskType
 
-		log.Printf("get tesk %v: %v", reply.TaskType, reply.X)
+		// log.Printf("get tesk %v: %v", reply.TaskType, reply.X)
 		if taskType == 0 {
 			// Perform map task, borrow code from mrsequential.go
 			filename := reply.InputFile
@@ -155,8 +155,7 @@ func Worker(mapf func(string, string) []KeyValue,
 				return
 			}*/
 
-			// TODO
-			log.Printf("Start Reading")
+			// log.Printf("Start Reading")
 
 			intermediate := []KeyValue{}
 			for i := 0; i < reply.NMap; i++ {
@@ -186,8 +185,7 @@ func Worker(mapf func(string, string) []KeyValue,
 			}
 			defer ofile.Close()
 
-			// TODO
-			log.Printf("Start Processing")
+			// log.Printf("Start Processing")
 
 			i := 0
 			for i < len(intermediate) {
@@ -207,8 +205,7 @@ func Worker(mapf func(string, string) []KeyValue,
 				i = j
 			}
 
-			// TODO
-			log.Printf("Start Writing to File")
+			// log.Printf("Start Writing to File")
 
 			destPath := filepath.Join(currentDir, oname)
 			if _, err := os.Stat(destPath); err == nil {
@@ -237,8 +234,7 @@ func Worker(mapf func(string, string) []KeyValue,
 		args.TaskType = taskType
 		args.TaskId = reply.X
 
-		// TODO
-		log.Printf("finish %v: %v", taskType, args.TaskId)
+		// log.Printf("finish %v: %v", taskType, args.TaskId)
 
 		// inform the coordinator of the accomplishment of task
 		call("Coordinator.AssignTask", &args, &reply)
