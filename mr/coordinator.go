@@ -12,28 +12,32 @@ import (
 
 type Coordinator struct {
 	// Your definitions here.
-	nMap                 int        // number of map tasks/input files
-	nReduce              int        // number of reduce tasks
-	files                []string   // input files
-	isMapAssigned        []bool     // if a map task has been assigned
-	isMapAccomplished    []bool     // if a map task has been accomplished
-	isMapDone            bool       // if all map tasks has been done
-	isReduceAssigned     []bool     // if a reduce task has been assigned
-	isReduceAccomplished []bool     // is a reduce task has been accomplished
-	isDone               bool       // if map-reduce is done
-	mux                  sync.Mutex // lock shared data
+	nMap                 int         // number of map tasks/input files
+	nReduce              int         // number of reduce tasks
+	files                []string    // input files
+	isMapAssigned        []bool      // if a map task has been assigned
+	isMapAccomplished    []bool      // if a map task has been accomplished
+	isMapDone            bool        // if all map tasks has been done
+	isReduceAssigned     []bool      // if a reduce task has been assigned
+	isReduceAccomplished []bool      // is a reduce task has been accomplished
+	isDone               bool        // if map-reduce is done
+	mapProgress          []time.Time // if map worker has responded
+	mux                  sync.Mutex  // lock shared data
 }
 
 // Your code here -- RPC handlers for the worker to call.
 func (c *Coordinator) AssignTask(args *TaskRequesetArgs, reply *TaskReplyArgs) error {
 	c.mux.Lock()
-	defer c.mux.Unlock()
+
 	reply.NReduce = c.nReduce
 	reply.NMap = c.nMap
 
 	if args.RequestType == 1 {
 		if args.TaskType == 0 {
-			c.isMapAccomplished[args.TaskId] = true
+			if args.IsFinish {
+				c.isMapAccomplished[args.TaskId] = true
+			}
+			c.mapProgress[args.TaskId] = time.Now()
 		} else {
 			c.isReduceAccomplished[args.TaskId] = true
 		}
@@ -45,24 +49,37 @@ func (c *Coordinator) AssignTask(args *TaskRequesetArgs, reply *TaskReplyArgs) e
 			for i := 0; i < c.nMap; i++ {
 				if !c.isMapAccomplished[i] {
 					isUnaccomplished = true
-					if !c.isMapAssigned[i] {
+					if !c.isMapAssigned[i] || time.Now().Sub(c.mapProgress[i]).Seconds() >= 10 {
 						reply.X = i
 						reply.TaskType = 0
 						reply.InputFile = c.files[i]
 
 						c.isMapAssigned[i] = true
+						c.mapProgress[i] = time.Now()
 						isAssigned = true
+						c.mux.Unlock()
 
-						// start a new goroutine to asynchronously wait for the worker to finish
-						go func() {
-							// Wait for 10 seconds
-							time.Sleep(1000 * time.Second)
+						/*go func() {
+							log.Printf("enter")
+							for !c.isMapAccomplished[i] {
+								time.Sleep(10 * time.Second)
 
-							if !c.isMapAccomplished[i] {
-								// if the map task has not been finished
-								c.isMapAssigned[i] = false
+								c.mux.Lock()
+								if !c.mapHaveProgress[i] {
+									// if the map task hasn't responded
+									c.isMapAssigned[i] = false
+									c.mux.Unlock()
+									return
+								} else {
+									c.mapHaveProgress[i] = false
+									c.mux.Unlock()
+								}
+
 							}
-						}()
+						}()*/
+
+						// Wait for 10 seconds
+
 						return nil
 					}
 				}
@@ -89,17 +106,20 @@ func (c *Coordinator) AssignTask(args *TaskRequesetArgs, reply *TaskReplyArgs) e
 						reply.TaskType = 1
 
 						c.isReduceAssigned[i] = true
+						c.mux.Unlock()
 
-						// start a new goroutine to asynchronously wait for the worker to finish
 						go func() {
 							// Wait for 10 seconds
 							time.Sleep(10 * time.Second)
 
+							c.mux.Lock()
 							if !c.isReduceAccomplished[i] {
 								// if the map task has not been finished
 								c.isReduceAssigned[i] = false
 							}
+							c.mux.Unlock()
 						}()
+
 						return nil
 					}
 				}
@@ -119,6 +139,7 @@ func (c *Coordinator) AssignTask(args *TaskRequesetArgs, reply *TaskReplyArgs) e
 			reply.TaskType = 3
 		}
 	}
+	c.mux.Unlock()
 	return nil
 }
 
@@ -150,10 +171,12 @@ func (c *Coordinator) Done() bool {
 	ret := false
 
 	// Your code here.
+	c.mux.Lock()
 	if c.isDone {
 		time.Sleep(5 * time.Second)
 		ret = true
 	}
+	c.mux.Unlock()
 
 	return ret
 }
@@ -175,6 +198,8 @@ func MakeCoordinator(files []string, nReduce int) *Coordinator {
 	c.isReduceAssigned = make([]bool, c.nReduce)
 	c.isMapAccomplished = make([]bool, c.nMap)
 	c.isReduceAccomplished = make([]bool, c.nReduce)
+
+	c.mapProgress = make([]time.Time, c.nMap)
 
 	c.server()
 	return &c

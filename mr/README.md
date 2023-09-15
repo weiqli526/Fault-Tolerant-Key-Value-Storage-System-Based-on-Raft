@@ -86,7 +86,7 @@ If you run the test script now, it will hang because the coordinator never finis
 
 ```
 $ cd mr-main
-$ bash test-mr.sh
+$ 
 *** Starting wc test.
 ```
 

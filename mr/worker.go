@@ -20,14 +20,6 @@ type KeyValue struct {
 	Value string
 }
 
-// Borrow code from mrsequential.go
-// for sorting by key.
-type ByKey []KeyValue
-
-func (a ByKey) Len() int           { return len(a) }
-func (a ByKey) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByKey) Less(i, j int) bool { return a[i].Key < a[j].Key }
-
 // use ihash(key) % NReduce to choose the reduce
 // task number for each KeyValue emitted by Map.
 func ihash(key string) int {
@@ -35,6 +27,14 @@ func ihash(key string) int {
 	h.Write([]byte(key))
 	return int(h.Sum32() & 0x7fffffff)
 }
+
+// Borrow code from mrsequential.go
+// for sorting by key.
+type ByKey []KeyValue
+
+func (a ByKey) Len() int           { return len(a) }
+func (a ByKey) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByKey) Less(i, j int) bool { return a[i].Key < a[j].Key }
 
 // mr-main/mrworker.go calls this function.
 func Worker(mapf func(string, string) []KeyValue,
@@ -57,12 +57,25 @@ func Worker(mapf func(string, string) []KeyValue,
 		taskType := reply.TaskType
 
 		// log.Printf("get tesk %v: %v", reply.TaskType, reply.X)
+
+		args.RequestType = 1
+		args.TaskType = taskType
+		args.TaskId = reply.X
+
 		if taskType == 0 {
 			// Perform map task, borrow code from mrsequential.go
+
 			filename := reply.InputFile
 			mapTask := reply.X
 			nReduce := reply.NReduce
 
+			// create nReduce buckets to store the kvs to be input to each file
+			buckets := make([][]KeyValue, nReduce)
+			for i := range buckets {
+				buckets[i] = []KeyValue{}
+			}
+
+			// get intermediate from the map task input file
 			file, err := os.Open(filename)
 			if err != nil {
 				log.Fatalf("cannot open %v", filename)
@@ -74,71 +87,50 @@ func Worker(mapf func(string, string) []KeyValue,
 			file.Close()
 			intermediate := mapf(filename, string(content))
 
-			sort.Sort(ByKey(intermediate))
+			// sort them to buckets
+			for _, kv := range intermediate {
+				Y := ihash(kv.Key) % nReduce
+				buckets[Y] = append(buckets[Y], kv)
+			}
 
-			// output to intermediate files
-			i := 0
-
-			nameMap := make(map[string]*os.File)
-
+			// store them to intermediate files
 			currentDir, err := os.Getwd()
 			if err != nil {
 				log.Fatalf("cannot get current directory, err: %v", err)
 				return
 			}
 
-			for i < len(intermediate) {
-				Y := ihash(intermediate[i].Key) % nReduce
+			for Y := range buckets {
+				// log.Printf("Start writing to file %v-%v", mapTask, Y)
 				oname := "mr-" + strconv.Itoa(mapTask) + "-" + strconv.Itoa(Y)
-
-				value, exists := nameMap[oname]
-				var ofile_tmp *os.File
-
-				if exists {
-					ofile_tmp = value
-				} else {
-					ofile_tmp, err = ioutil.TempFile(currentDir, oname)
-					if err != nil {
-						log.Fatalf("cannot create tmp file, err: %v", err)
-						return
-					}
-					defer ofile_tmp.Close()
+				ofile_tmp, err := ioutil.TempFile(currentDir, oname)
+				// ofile_tmp, err := ioutil.TempFile("", oname)
+				if err != nil {
+					log.Fatalf("cannot create tmp file, err: %v", err)
+					return
 				}
 
 				enc := json.NewEncoder(ofile_tmp)
-
-				j := i
-				for j < len(intermediate) && intermediate[j].Key == intermediate[i].Key {
-					err := enc.Encode(&intermediate[j])
+				for _, kv := range buckets[Y] {
+					err := enc.Encode(&kv)
 					if err != nil {
 						log.Printf("cannot write to %v, err = %v", ofile_tmp, err)
 						return
 					}
-					j++
 				}
 
-				nameMap[oname] = ofile_tmp
-
-				i = j
-			}
-
-			for key, value := range nameMap {
-				destPath := filepath.Join(currentDir, key)
-				if _, err := os.Stat(destPath); err == nil {
-					if err := os.Remove(value.Name()); err != nil {
-						log.Printf("cannot delete tmpFile, err = %v", err)
-						return
-					}
-				} else if os.IsNotExist(err) {
-					if err := os.Rename(value.Name(), destPath); err != nil {
-						log.Printf("cannot rename %v, err = %v", key, err)
-						return
-					}
-				} else {
-					log.Printf("cannot handle tmpFile, err = %v", err)
+				// rename file
+				if err := os.Rename(ofile_tmp.Name(), oname); err != nil {
+					log.Printf("cannot rename %v, err = %v", oname, err)
 					return
 				}
+
+				ofile_tmp.Close()
+				// log.Printf("Finish writing to file %v-%v", mapTask, Y)
+
+				call("Coordinator.AssignTask", &args, &reply)
 			}
+
 		} else if taskType == 1 {
 			// perform reduce task, borrow code from mrsequential.go
 			reduceTask := reply.X
@@ -160,9 +152,10 @@ func Worker(mapf func(string, string) []KeyValue,
 			intermediate := []KeyValue{}
 			for i := 0; i < reply.NMap; i++ {
 				filename := "mr-" + strconv.Itoa(i) + "-" + strconv.Itoa(reduceTask)
-				file, err := os.Open(filename)
+				file, err := os.Open(filepath.Join(currentDir, filename))
+				// file, err := os.Open(filename)
 				if err != nil {
-					log.Printf("cannot open %v, err = %v", filename, err)
+					log.Fatalf("cannot open %v, err = %v", filename, err)
 					continue
 				}
 				dec := json.NewDecoder(file)
@@ -180,6 +173,7 @@ func Worker(mapf func(string, string) []KeyValue,
 			oname := "mr-out-" + strconv.Itoa(reduceTask)
 
 			ofile, err := ioutil.TempFile(currentDir, oname)
+			// ofile, err := ioutil.TempFile("", oname)
 			if err != nil {
 				log.Fatalf("cannot create tmp file, err: %v", err)
 			}
@@ -208,15 +202,14 @@ func Worker(mapf func(string, string) []KeyValue,
 			// log.Printf("Start Writing to File")
 
 			destPath := filepath.Join(currentDir, oname)
+			// destPath := oname
 			if _, err := os.Stat(destPath); err == nil {
 				if err := os.Remove(ofile.Name()); err != nil {
-					log.Printf("cannot delete tmpFile, err = %v", err)
-					return
+					log.Fatalf("cannot delete tmpFile, err = %v", err)
 				}
 			} else if os.IsNotExist(err) {
 				if err := os.Rename(ofile.Name(), destPath); err != nil {
-					log.Printf("cannot rename %v, err = %v", oname, err)
-					return
+					log.Fatalf("cannot rename %v, err = %v", oname, err)
 				}
 
 			} else {
@@ -224,15 +217,14 @@ func Worker(mapf func(string, string) []KeyValue,
 			}
 
 		} else if taskType == 2 {
+			// Wait
 			time.Sleep(1 * time.Second)
 			continue
 		} else {
 			return
 		}
 
-		args.RequestType = 1
-		args.TaskType = taskType
-		args.TaskId = reply.X
+		args.IsFinish = true
 
 		// log.Printf("finish %v: %v", taskType, args.TaskId)
 

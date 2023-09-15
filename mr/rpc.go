@@ -29,6 +29,7 @@ type TaskRequesetArgs struct {
 	RequestType int // 0: ask for task 1: inform of accomplishment
 	TaskType    int // 0: map task, 1: reduce task 2: wait
 	TaskId      int
+	IsFinish    bool // 1: complete task
 }
 
 type TaskReplyArgs struct {
