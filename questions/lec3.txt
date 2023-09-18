@@ -1,0 +1,4 @@
+PAPER QUESTION:
+Is it possible that a GFS client application reads an old version of a file? If not, explain why. If yes, give an example.
+
+ANSWER: Yes, when a client reads from a replica in their cached chunk locations, there are chances that the replica has become stale because it has missed mutations while its chunkserver was down or has not yet received the updated data. However, this is limited by the cache entry's time out, the purge that occur when a file is reopened, and the premature end of chunk returned to the clinet in case of failure during data append.
