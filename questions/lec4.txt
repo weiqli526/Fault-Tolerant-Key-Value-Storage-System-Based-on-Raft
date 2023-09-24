@@ -1,0 +1,4 @@
+PAPER QUESTION:
+Is it possible that a Raft-based replicated log is unavailable (i.e. unable to serve client requests) even if the majority of servers participating in the protocol are up and running? Explain why or why not.
+
+Answer: Yes. If the leader at the current term crashes before the log is commited, the new leader may overwrite the replicated log.
