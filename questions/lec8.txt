@@ -1,0 +1,4 @@
+Zookeeper can be used to build a fault-tolerant lock service. How does it guarantee that two client?applications cannot acquire the same lock at the same time?
+
+ANSWER:
+ To acquire a lock, a client has to create a designated znode with the EPHEMERAL flag. Since only one znode can be created by only one client at a time, the other clients have to wait until the client who created the znode releases the lock (deletes the znode) to acquire the lock. This guarantees that two client cannot acquire the same lock at the same time.
