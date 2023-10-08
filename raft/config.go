@@ -319,7 +319,7 @@ func (cfg *config) start1(i int, applier func(int, chan ApplyMsg, <-chan struct{
 
 	cfg.mu.Lock()
 
-	cfg.nextIndex[i] = 0
+	cfg.nextIndex[i] = 1
 
 	// a fresh persister, so old instance doesn't overwrite
 	// new instance's persisted state.
