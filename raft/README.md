@@ -229,3 +229,20 @@ Modify your Raft code to support snapshots: implement `Snapshot`, `CondInstallSn
 * A reasonable amount of time to consume for the full set of the tests (2A+2B+2C+2D) is 8 minutes of real time and one and a half minutes of CPU time.
 
 
+Your code should pass all the 2D tests (as shown below), as well as the 2A, 2B, and 2C tests.
+
+```
+$ go test -run 2D
+Test (2D): snapshots basic ...
+  ... Passed --  11.6  3  176   61716  192
+Test (2D): install snapshots (disconnect) ...
+  ... Passed --  64.2  3  878  320610  336
+Test (2D): install snapshots (disconnect+unreliable) ...
+  ... Passed --  81.1  3 1059  375850  341
+Test (2D): install snapshots (crash) ...
+  ... Passed --  53.5  3  601  256638  339
+Test (2D): install snapshots (unreliable+crash) ...
+  ... Passed --  63.5  3  687  288294  336
+PASS
+ok      6.5840/raft      293.456s
+```
