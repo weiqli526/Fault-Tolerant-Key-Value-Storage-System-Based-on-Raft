@@ -1,0 +1,4 @@
+In Thor, after a server commits a transaction, the server sends out invalidation messages to clients that are caching data written by that transaction. It may take a while for those invalidations to arrive. Is it possible that other clients read stale cached data in the meantime? Explain why or why not.
+
+ANSWER:
+No, it is not possible that other clients read stale cached data in the meantime because the cordinator notifies the client of its decision after phase 1 and before phase 2. 
