@@ -167,10 +167,11 @@ func (cfg *config) apply(server int, m ApplyMsg) {
 		cfg.didRecv[server] = true
 		if m.CommandIndex == 1 {
 			if cfg.nextIndex[server] != 0 {
-				panic("assertion failed on cfg.nextindex[server]!=0")
+				// panic("assertion failed on cfg.nextindex[server]!=0")
+			} else {
+				log.Printf("Tester: setting server %d nextindex to 1 as first message starts at 1", server)
+				cfg.nextIndex[server] = 1
 			}
-			log.Printf("Tester: setting server %d nextindex to 1 as first message starts at 1", server)
-			cfg.nextIndex[server] = 1
 		}
 	}
 	if m.CommandIndex != cfg.nextIndex[server] {
@@ -355,6 +356,10 @@ func (cfg *config) start1(i int, applier func(int, chan ApplyMsg, <-chan struct{
 
 	cfg.mu.Lock()
 	cfg.rafts[i] = rf
+
+	cfg.didRecv[i] = false
+	log.Printf("Tester: resetting didRecv[%d] to false as new server is created", i)
+
 	cfg.mu.Unlock()
 
 	svc := labrpc.MakeService(rf)

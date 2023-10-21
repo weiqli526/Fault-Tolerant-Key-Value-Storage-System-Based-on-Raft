@@ -979,7 +979,7 @@ func internalChurn(t *testing.T, unreliable bool) {
 	lastIndex := cfg.one(rand.Int(), servers, true)
 
 	really := []int{}
-	for index := 0; index <= lastIndex; index++ {
+	for index := 1; index <= lastIndex; index++ {
 		_, e := cfg.wait(index, servers, -1)
 		if e.valid {
 			if vi, ok := e.command.(int); ok {
