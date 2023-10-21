@@ -669,7 +669,7 @@ func (rf *Raft) actLeader(term int) {
 						} else if !reply.Success && rf.matchIndex[i] < args.PrevLogIndex && rf.currentTerm == term {
 							if args.PrevLogIndex > 1 {
 								if reply.XTerm != 0 {
-									/*isTermExists := false
+									isTermExists := false
 									if reply.XTerm <= rf.currentTerm {
 										for j := 0; j < len(rf.logs); j++ {
 											if rf.logs[j].Term == reply.XTerm {
@@ -681,7 +681,7 @@ func (rf *Raft) actLeader(term int) {
 									}
 									if !isTermExists {
 										rf.nextIndex[i] = reply.XIndex
-									}*/
+									}
 									index := sort.Search(len(rf.logs), func(j int) bool {
 										return rf.logs[j].Term >= reply.XTerm
 									})
@@ -727,75 +727,6 @@ func (rf *Raft) actLeader(term int) {
 				}
 			}(idx, term)
 		}
-		/*go func(i int, term int) {
-			rf.mu.Lock()
-			isLeader := (rf.state == Leader) && rf.currentTerm == term
-			isKilled := rf.killed()
-			rf.mu.Unlock()
-			for isKilled == false && isLeader {
-				rf.mu.Lock()
-				args := AppendEntriesArgs{}
-				reply := AppendEntriesReply{}
-
-				args.Term = rf.currentTerm
-				args.LeaderId = rf.me
-				args.LeaderCommit = rf.commitIndex
-
-				args.PrevLogIndex = rf.nextIndex[i] - 1
-				if args.PrevLogIndex != 0 {
-					args.PrevLogTerm = rf.logs[args.PrevLogIndex-1].Term
-				}
-
-				// fmt.Printf("i = %v: prevIdx, term = %v, %v\n", i, args.PrevLogIndex, args.PrevLogTerm)
-				// fmt.Printf("615: %v, %v, %v, %v\n", rf.me, rf.nextIndex, len(rf.logs), rf.currentTerm)
-
-				rf.mu.Unlock()
-
-				rf.peers[i].Call("Raft.AppendEntries", &args, &reply)
-
-				rf.mu.Lock()
-				rf.connects[i] = 1
-
-				// fmt.Printf("Receives RPC, %v, %v, %v\n", reply.Success, args.PrevLogIndex, len(args.Entries))
-				// fmt.Printf("%v, %v: %v, %v\n", rf.me, rf.currentTerm, rf.matchIndex, rf.nextIndex)
-				if reply.Term > rf.currentTerm {
-					rf.state = Follower
-					rf.currentTerm = reply.Term
-					rf.mu.Unlock()
-					break
-				}
-
-				rf.mu.Unlock()
-
-				time.Sleep(75 * time.Millisecond)
-				rf.mu.Lock()
-				isLeader = (rf.state == Leader) && (rf.currentTerm == term)
-				isKilled = rf.killed()
-				rf.mu.Unlock()
-			}
-		}(idx, term)*/
-		/*go func(term int) {
-			rf.mu.Lock()
-			if rf.state == Leader {
-				rf.mu.Unlock()
-				time.Sleep(275 * time.Millisecond)
-				rf.mu.Lock()
-				if rf.state == Leader && rf.currentTerm == term {
-					connect_nums := 0
-					for i := range rf.peers {
-						if rf.connects[i] == 1 {
-							connect_nums += 1
-							rf.connects[i] = 0
-						}
-					}
-					if connect_nums < (len(rf.peers) / 2) {
-						// mt.Printf("Leader %v steps down \n", rf.me)
-						rf.state = Follower
-					}
-				}
-			}
-			rf.mu.Unlock()
-		}(term)*/
 	}
 
 	go func(term int) {
@@ -813,24 +744,6 @@ func (rf *Raft) checkCommitment(term int) {
 		rf.mu.Lock()
 
 		// check commitment status, from commitIndex to end
-		/*for i := rf.commitIndex + 1; i < rf.nextIndex[rf.me]; i++ {
-			// check if entry which has index i is commited
-			nums_i := 0
-			for j := range rf.matchIndex {
-				if rf.matchIndex[j] >= i {
-					nums_i += 1
-				}
-			}
-			if rf.logs[i].Term == rf.currentTerm && nums_i > len(rf.peers)/2 {
-				// commit
-				rf.commitIndex = i
-				rf.applyEntry(i)
-				rf.lastApplied = i
-			} else {
-				break
-			}
-		}*/
-
 		if rf.currentTerm == term {
 			for i := rf.nextIndex[rf.me] - 1; i > rf.commitIndex; i-- {
 				nums_i := 0
