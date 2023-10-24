@@ -838,14 +838,14 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	rf.updateTerm(0)
 
 	// for test code
-	go func() {
+	/*go func() {
 		applymsg := ApplyMsg{
 			CommandValid: true,
 			Command:      0,
 			CommandIndex: 0,
 		}
 		rf.applyCh <- applymsg
-	}()
+	}()*/
 	rf.readPersist(rf.persister.raftstate)
 
 	go rf.ticker()
