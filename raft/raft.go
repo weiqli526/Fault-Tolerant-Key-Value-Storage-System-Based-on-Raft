@@ -566,7 +566,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 		// if this server isn't the leader, returns false
 		isLeader = false
 		rf.mu.Unlock()
-	} else if rf.killed() == false {
+	} else {
 		isLeader = true
 		// the first return value is the index that the command will appear at
 		// if it's ever committed. the second return value is the current
@@ -625,16 +625,17 @@ func (rf *Raft) ticker() {
 		time.Sleep(timeoutPeriod / 3)
 		rf.mu.Lock()
 		if rf.state != Leader && time.Now().Sub(rf.lastHeartbeat) > rf.timeoutPeriod {
+			rf.mu.Unlock()
 			go func() {
 				rf.startElection()
 			}()
-			rf.mu.Unlock()
-			time.Sleep(1500 * time.Millisecond)
+
+			time.Sleep(3500 * time.Millisecond)
 		} else {
 			// time.Sleep(300 * time.Millisecond)
 			rf.mu.Unlock()
 		}
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 	}
 }
 
@@ -644,7 +645,7 @@ func (rf *Raft) startElection() {
 	if rf.killed() != false {
 		return
 	}
-	// fmt.Printf("Start electing for leader, %d at term %d\n", rf.me, rf.currentTerm)
+	fmt.Printf("Start electing for leader, %d at term %d\n", rf.me, rf.currentTerm)
 	rf.state = Candidate
 
 	votes := 0
@@ -715,7 +716,7 @@ func (rf *Raft) startElection() {
 
 							go func(term int) {
 								rf.mu.Lock()
-								// fmt.Printf("%d becomes leader of term %v, log len = %v, matchIndex = %v\n", rf.me, term, len(rf.logs), rf.matchIndex)
+								fmt.Printf("%d becomes leader of term %v, log len = %v, matchIndex = %v\n", rf.me, term, len(rf.logs), rf.matchIndex)
 								// rf.actLeader(term)
 								rf.mu.Unlock()
 								rf.actLeader(term)
@@ -895,10 +896,11 @@ func (rf *Raft) actLeader(term int) {
 						rf.mu.Unlock()
 					}
 
-					time.Sleep(125 * time.Millisecond)
+					time.Sleep(20 * time.Millisecond)
 					rf.mu.Lock()
 					isLeader = (rf.state == Leader) && (rf.currentTerm == term)
 					rf.mu.Unlock()
+
 				}
 			}(idx, term)
 		}
@@ -915,7 +917,7 @@ func (rf *Raft) checkCommitment(term int) {
 	isLeader := (rf.state == Leader) && rf.currentTerm == term
 	rf.mu.Unlock()
 	for isLeader {
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(20 * time.Millisecond)
 		rf.mu.Lock()
 
 		// check commitment status, from commitIndex to end
@@ -959,27 +961,31 @@ func (rf *Raft) applyEntry(i int) {
 
 func (rf *Raft) applyCommit() {
 	rf.mu.Lock()
+	if rf.lastApplied == rf.commitIndex {
+		rf.mu.Unlock()
+		return
+	}
 	// fmt.Printf("%v is applying index %v, %v, lastInclude %v\n", rf.me, rf.lastApplied, rf.commitIndex, rf.lastIncludeIndex)
-	// applyMsgs := []ApplyMsg{}
+	applyMsgs := []ApplyMsg{}
 	for i := rf.lastApplied + 1; i <= rf.commitIndex && !rf.killed(); i++ {
-		/*applyMsgs = append(applyMsgs, ApplyMsg{
+		applyMsgs = append(applyMsgs, ApplyMsg{
 			CommandValid: true,
 			Command:      rf.logs[i-1-rf.lastIncludeIndex].Command,
 			CommandIndex: rf.logs[i-1-rf.lastIncludeIndex].Index,
-		})*/
-		rf.applyCh <- ApplyMsg{
+		})
+		/*rf.applyCh <- ApplyMsg{
 			CommandValid: true,
 			Command:      rf.logs[i-1-rf.lastIncludeIndex].Command,
 			CommandIndex: rf.logs[i-1-rf.lastIncludeIndex].Index,
-		}
+		}*/
 		// fmt.Printf("%v: Index: %v, Command: %v\n", rf.me, rf.logs[i-1-rf.lastIncludeIndex].Index, rf.logs[i-1-rf.lastIncludeIndex].Command)
 	}
 	rf.lastApplied = rf.commitIndex
 	rf.mu.Unlock()
 
-	/*for _, applymsg := range applyMsgs {
+	for _, applymsg := range applyMsgs {
 		rf.applyCh <- applymsg
-	}*/
+	}
 
 	// fmt.Printf("Now %v has commit and applied index %v\n", rf.me, rf.commitIndex)
 }
@@ -987,7 +993,7 @@ func (rf *Raft) applyCommit() {
 func (rf *Raft) checkApply() {
 	for rf.killed() == false {
 		rf.applyCommit()
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(20 * time.Millisecond)
 	}
 }
 
@@ -1037,7 +1043,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	}()*/
 	rf.readPersist(rf.persister.raftstate)
 
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(250 * time.Millisecond)
 
 	go rf.ticker()
 

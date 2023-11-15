@@ -59,7 +59,7 @@ Add code to handle failures, and to cope with duplicate Clerk requests, includin
 *   Your solution needs to handle a leader that has called `Start()` for a Clerk's RPC, but loses its leadership before the request is committed to the log. In this case you should arrange for the Clerk to re-send the request to other servers until it finds the new leader. One way to do this is for the server to detect that it has lost leadership, by noticing that a different request has appeared at the index returned by `Start()`, or that Raft's term has changed. If the ex-leader is partitioned by itself, it won't know about new leaders; but any client in the same partition won't be able to talk to a new leader either, so it's OK in this case for the server and client to wait indefinitely until the partition heals.
 *   You will probably have to modify your Clerk to remember which server turned out to be the leader for the last RPC, and send the next RPC to that server first. This will avoid wasting time searching for the leader on every RPC, which may help you pass some of the tests quickly enough.
 *   You will need to uniquely identify client operations to ensure that the key/value service executes each one just once.
-*   Your scheme for duplicate detection should free server memory quickly, for example by having each RPC imply that the client has seen the reply for its previous RPC. It's OK to assume that a client will make only one call into a Clerk at a time.
+*  
 
 Your code should now pass the Lab 3A tests, like this:
 ```
@@ -138,4 +138,4 @@ Test: unreliable net, restarts, partitions, snapshots, random keys, many clients
   ... Passed --  37.7  7  8378  681
 PASS
 ok  	cs651/kvraft	161.538s
-```
+``` Your scheme for duplicate detection should free server memory quickly, for example by having each RPC imply that the client has seen the reply for its previous RPC. It's OK to assume that a client will make only one call into a Clerk at a time.
