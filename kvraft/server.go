@@ -52,15 +52,19 @@ type KVServer struct {
 type RPCInfo struct {
 	seq   int
 	value string
+	idx   int
 }
 
 func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 	// Your code here.
 
 	client := args.ClientId
-	// kv.mu.Lock()
+	kv.mu.Lock()
 	value, exists := kv.duplicate[client]
-	// kv.mu.Unlock()
+	if !exists {
+		kv.duplicate[client] = &RPCInfo{}
+	}
+	kv.mu.Unlock()
 	if !exists || value.seq < args.Seq {
 		// Call Start
 		op := Op{
@@ -72,8 +76,7 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 			Leader: kv.me,
 		}
 		idx, _, isLeader := kv.rf.Start(op)
-		kv.isLeader = isLeader
-		fmt.Printf("isLeader %v, seq %v, clerk %v, server %v, index %v\n", isLeader, op.Seq, op.Client, kv.me, idx)
+		// fmt.Printf("isLeader %v, seq %v, clerk %v, server %v, index %v\n", isLeader, op.Seq, op.Client, kv.me, idx)
 		if isLeader {
 			// wait for idx to appear
 			/*round := 0
@@ -95,41 +98,37 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 				time.Sleep(50 * time.Millisecond)
 				round += 1
 			}*/
-			// kv.mu.Lock()
-			fmt.Printf("submit command with idx %v, seq %v, clerk %v, kv server %v\n", idx, op.Seq, op.Client, kv.me)
-			_, exist := kv.applyCommands[client]
-			if !exist {
-				// fmt.Printf("Creating channel \n")
-				kv.applyCommands[client] = make(chan string, 10)
-			}
-			// kv.mu.Unlock()
-
+			kv.mu.Lock()
+			kv.duplicate[client].idx = idx
+			// fmt.Printf("submit command with idx %v, seq %v, clerk %v, kv server %v\n", idx, op.Seq, op.Client, kv.me)
+			rpcChan := make(chan string, 1)
+			kv.applyCommands[client] = rpcChan
+			kv.mu.Unlock()
 			select {
-			case res := <-kv.applyCommands[client]:
-				reply.Value = res
+			case val := <-kv.applyCommands[client]:
+				// fmt.Printf("get value %v\n", val)
 				reply.Success = true
-				// close(kv.applyCommands[client])
-				// delete(kv.applyCommands, client)
-			case <-time.After(100 * time.Millisecond):
+				reply.Value = val
+			case <-time.After(600 * time.Millisecond):
 				reply.Success = false
-				fmt.Printf("Replying false due to timeout %v, server %v, client %v\n", op.Seq, kv.me, op.Client)
+				// fmt.Printf("Replying false due to timeout %v, server %v, client %v\n", op.Seq, kv.me, op.Client)
 			}
+			// close(rpcChan)
+			// fmt.Printf("Replying false due to timeout %v, server %v, client %v\n", op.Seq, kv.me, op.Client)
 
 		} else {
-			fmt.Printf("Server %v not leader\n", kv.me)
+			// fmt.Printf("Server %v not leader\n", kv.me)
 			reply.Success = false
 			reply.Err = ErrWrongLeader
 		}
 	} else {
-		fmt.Printf("Provessesed command %v:%v\n", args.ClientId, args.Seq)
-		if kv.isLeader {
-			reply.Value = value.value
-			reply.Success = true
-		}
+		// fmt.Printf("Processesed command %v:%v, server %v\n", args.ClientId, args.Seq, kv.me)
+		reply.Success = true
+		reply.Value = value.value
 
 	}
 
-	fmt.Printf("Returnning seq %v, clerk %v, server %v\n", args.Seq, args.ClientId, kv.me)
+	// fmt.Printf("Returnning seq %v, clerk %v, server %v\n", args.Seq, args.ClientId, kv.me)
 
 }
 
@@ -137,11 +136,15 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 	// Your code here.
 
 	client := args.ClientId
-	// kv.mu.Lock()
+	kv.mu.Lock()
 	value, exists := kv.duplicate[client]
-	// kv.mu.Unlock()
+	if !exists {
+		kv.duplicate[client] = &RPCInfo{}
+	}
+	kv.mu.Unlock()
 	if !exists || value.seq < args.Seq {
 		// Call Start
+
 		op := Op{
 			Key:    args.Key,
 			Type:   args.Op,
@@ -152,26 +155,25 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 		}
 		idx, _, isLeader := kv.rf.Start(op)
 		kv.isLeader = isLeader
-		fmt.Printf("isLeader %v, seq %v, clerk %v, server %v, index %v\n", isLeader, op.Seq, op.Client, kv.me, idx)
+		// fmt.Printf("isLeader %v, seq %v, clerk %v, server %v, index %v\n", isLeader, op.Seq, op.Client, kv.me, idx)
 		if isLeader {
 			// wait for idx to appear
 			// fmt.Printf("submit command with idx %v, seq %v, clerk %v, kv server %v\n", idx, op.Seq, op.Client, kv.me)
 			kv.mu.Lock()
-			_, exist := kv.applyCommands[client]
-			if !exist {
-				kv.applyCommands[client] = make(chan string, 10)
-				// fmt.Printf("Creating channel \n")
-			}
+			kv.duplicate[client].idx = idx
+			rpcChan := make(chan string, 1)
+			kv.applyCommands[client] = rpcChan
 			kv.mu.Unlock()
 			select {
 			case _ = <-kv.applyCommands[client]:
 				reply.Success = true
-				// close(kv.applyCommands[client])
-				// delete(kv.applyCommands, client)
-			case <-time.After(100 * time.Millisecond):
-				fmt.Printf("Replying false due to timeout %v, server %v, client %v\n", op.Seq, kv.me, op.Client)
+			case <-time.After(600 * time.Millisecond):
 				reply.Success = false
+				// fmt.Printf("Replying false due to timeout %v, server %v, client %v\n", op.Seq, kv.me, op.Client)
+
 			}
+			// close(rpcChan)
+
 			/*round := 0
 			for round < 5 {
 				time.Sleep(10 * time.Millisecond)
@@ -192,17 +194,16 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 			}*/
 
 		} else {
-			fmt.Printf("Server %v not leader\n", kv.me)
+			// fmt.Printf("Server %v not leader\n", kv.me)
 			reply.Err = ErrWrongLeader
 			reply.Success = false
 		}
 	} else {
-		if kv.isLeader {
-			reply.Success = true
-		}
+		// fmt.Printf("Processesed command %v:%v, server %v\n", args.ClientId, args.Seq, kv.me)
+		reply.Success = true
 	}
 
-	fmt.Printf("Returnning seq %v, clerk %v, server %v\n", args.Seq, args.ClientId, kv.me)
+	// fmt.Printf("Returnning seq %v, clerk %v, server %v\n", args.Seq, args.ClientId, kv.me)
 
 }
 
@@ -283,19 +284,28 @@ func (kv *KVServer) applyTicker() {
 					kv.dataDict[op.Key] = val + op.Value
 				}
 
-				if op.Leader == kv.me {
-					fmt.Printf("%v reply to channel, seq=%v, client=%v, index = %v\n", kv.me, cmd.CommandIndex, op.Seq, op.Client)
-					kv.applyCommands[op.Client] <- val
+				if !exist {
+					kv.duplicate[op.Client] = &RPCInfo{seq: op.Seq, value: val, idx: 0}
+				} else {
+					kv.duplicate[op.Client].seq = op.Seq
+					kv.duplicate[op.Client].value = val
 				}
 
 				// kv.duplicate[op.Client] = val
-				kv.duplicate[op.Client] = &RPCInfo{seq: op.Seq, value: val}
+				//
 
-				fmt.Printf("%v See cmd with idx %v, seq %v, clerk %v\n", kv.me, cmd.CommandIndex, op.Seq, op.Client)
+				if op.Leader == kv.me && kv.duplicate[op.Client].idx == cmd.CommandIndex {
+					// fmt.Printf("%v reply to channel, index = %v, seq=%v, client=%v\n", kv.me, cmd.CommandIndex, op.Seq, op.Client)
+					kv.applyCommands[op.Client] <- val
+				}
+
+				// fmt.Printf("%v See cmd with idx %v, seq %v, clerk %v\n", kv.me, cmd.CommandIndex, op.Seq, op.Client)
+			} else if op.Leader == kv.me && kv.duplicate[op.Client].idx == cmd.CommandIndex {
+				// fmt.Printf("%v reply to channel, seq=%v, client=%v, index = %v\n", kv.me, cmd.CommandIndex, op.Seq, op.Client)
+				kv.applyCommands[op.Client] <- value.value
 			}
-
-			kv.highestIdx = cmd.CommandIndex
 			kv.mu.Unlock()
+
 		} else {
 			fmt.Println("Type assertion failed")
 		}

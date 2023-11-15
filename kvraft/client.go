@@ -3,7 +3,6 @@ package kvraft
 import (
 	"crypto/rand"
 	"cs651/labrpc"
-	"fmt"
 	"math/big"
 	"time"
 )
@@ -43,7 +42,7 @@ func MakeClerk(servers []*labrpc.ClientEnd) *Clerk {
 // must match the declared types of the RPC handler function's
 // arguments. and reply must be passed as a pointer.
 func (ck *Clerk) Get(key string) string {
-	fmt.Printf("%v calls Get, ck.leader = %v\n", ck.clientId, ck.leader)
+	// fmt.Printf("%v calls Get, ck.leader = %v\n", ck.clientId, ck.leader)
 	// You will have to modify this function.
 	ck.sequence += 1
 	seq := ck.sequence
@@ -55,9 +54,9 @@ func (ck *Clerk) Get(key string) string {
 	reply := GetReply{}
 
 	ok, val := func(k int, args GetArgs, reply GetReply) (bool, string) {
-		fmt.Printf("%v Calling, server = %v\n", args.ClientId, k)
+		// fmt.Printf("%v Calling, server = %v, seq = %v\n", args.ClientId, k, args.Seq)
 		ok := ck.servers[k].Call("KVServer.Get", &args, &reply)
-		// fmt.Printf("%v Reply Success = %v, server = %v\n", args.ClientId, reply.Success, k)
+		// fmt.Printf("%v Reply Success = %v, server = %v, seq = %v\n", args.ClientId, reply.Success, k, args.Seq)
 		// time.Sleep(10 * time.Millisecond)
 		if ok && reply.Success {
 			return true, reply.Value
@@ -67,11 +66,11 @@ func (ck *Clerk) Get(key string) string {
 	if !ok {
 		j := 0
 		for {
-			time.Sleep(200 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 			ok, val = func(k int, args GetArgs, reply GetReply) (bool, string) {
-				fmt.Printf("%v Calling, server = %v\n", args.ClientId, k)
+				// fmt.Printf("%v Calling, server = %v, seq = %v\n", args.ClientId, k, args.Seq)
 				ok := ck.servers[k].Call("KVServer.Get", &args, &reply)
-				// fmt.Printf("%v Reply Success = %v, server = %v\n", args.ClientId, reply.Success, k)
+				// fmt.Printf("%v Reply Success = %v, server = %v, seq = %v\n", args.ClientId, reply.Success, k, args.Seq)
 				// time.Sleep(10 * time.Millisecond)
 				if ok && reply.Success {
 					ck.leader = k
@@ -149,7 +148,7 @@ func (ck *Clerk) Get(key string) string {
 // arguments. and reply must be passed as a pointer.
 func (ck *Clerk) PutAppend(key string, value string, op string) {
 	// You will have to modify this function.
-	fmt.Printf("%v calls Put, ck.leader = %v\n", ck.clientId, ck.leader)
+	// fmt.Printf("%v calls Put, ck.leader = %v\n", ck.clientId, ck.leader)
 	ck.sequence += 1
 	seq := ck.sequence
 	args := PutAppendArgs{
@@ -162,9 +161,9 @@ func (ck *Clerk) PutAppend(key string, value string, op string) {
 	reply := PutAppendReply{}
 
 	ok := func(k int, args PutAppendArgs, reply PutAppendReply) bool {
-		fmt.Printf("%v Calling, server = %v\n", args.ClientId, k)
+		// fmt.Printf("%v Calling, server = %v\n", args.ClientId, k)
 		ok := ck.servers[k].Call("KVServer.PutAppend", &args, &reply)
-		// fmt.Printf("%v Reply Success = %v, server = %v\n", args.ClientId, reply.Success, k)
+		// fmt.Printf("%v Reply Success = %v, server = %v, seq = %v\n", args.ClientId, reply.Success, k, args.Seq)
 		// time.Sleep(10 * time.Millisecond)
 		if ok && reply.Success {
 			return true
@@ -176,11 +175,11 @@ func (ck *Clerk) PutAppend(key string, value string, op string) {
 	if !ok {
 		j := 0
 		for {
-			time.Sleep(200 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 			ok = func(k int, args PutAppendArgs, reply PutAppendReply) bool {
-				fmt.Printf("%v Calling, server = %v\n", args.ClientId, k)
+				// fmt.Printf("%v Calling, server = %v\n", args.ClientId, k)
 				ok := ck.servers[k].Call("KVServer.PutAppend", &args, &reply)
-				// fmt.Printf("%v Reply Success = %v, server = %v\n", args.ClientId, reply.Success, k)
+				// fmt.Printf("%v Reply Success = %v, server = %v, seq = %v\n", args.ClientId, reply.Success, k, args.Seq)
 				// time.Sleep(10 * time.Millisecond)
 				if ok && reply.Success {
 					ck.leader = k
