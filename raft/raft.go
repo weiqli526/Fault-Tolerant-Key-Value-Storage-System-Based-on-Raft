@@ -645,7 +645,7 @@ func (rf *Raft) startElection() {
 	if rf.killed() != false {
 		return
 	}
-	fmt.Printf("Start electing for leader, %d at term %d\n", rf.me, rf.currentTerm)
+	// fmt.Printf("Start electing for leader, %d at term %d\n", rf.me, rf.currentTerm)
 	rf.state = Candidate
 
 	votes := 0
@@ -716,7 +716,7 @@ func (rf *Raft) startElection() {
 
 							go func(term int) {
 								rf.mu.Lock()
-								fmt.Printf("%d becomes leader of term %v, log len = %v, matchIndex = %v\n", rf.me, term, len(rf.logs), rf.matchIndex)
+								// fmt.Printf("%d becomes leader of term %v, log len = %v, matchIndex = %v\n", rf.me, term, len(rf.logs), rf.matchIndex)
 								// rf.actLeader(term)
 								rf.mu.Unlock()
 								rf.actLeader(term)
@@ -917,7 +917,7 @@ func (rf *Raft) checkCommitment(term int) {
 	isLeader := (rf.state == Leader) && rf.currentTerm == term
 	rf.mu.Unlock()
 	for isLeader {
-		time.Sleep(20 * time.Millisecond)
+		time.Sleep(15 * time.Millisecond)
 		rf.mu.Lock()
 
 		// check commitment status, from commitIndex to end
@@ -993,7 +993,7 @@ func (rf *Raft) applyCommit() {
 func (rf *Raft) checkApply() {
 	for rf.killed() == false {
 		rf.applyCommit()
-		time.Sleep(20 * time.Millisecond)
+		time.Sleep(15 * time.Millisecond)
 	}
 }
 

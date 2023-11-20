@@ -1,0 +1,3 @@
+Q: What limitations of MapReduce does Spark address?
+
+A: The lack abstractions for leveraging distributed memory. For those that reuse intermediate results across multiple computations and interactive data mining, it has to be written to an external stable storage system, e.g., a distributed file system. This incurs substantial overheads due to data replication, disk I/O, and serialization, which can dominate application execution times.
