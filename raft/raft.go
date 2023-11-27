@@ -170,10 +170,12 @@ func (rf *Raft) readPersist(data []byte) {
 		rf.currentTerm = currentTerm
 		rf.votedFor = votedFor
 		rf.logs = logs
-		// rf.lastIncludeIndex = lastIncludedIndex
-		// rf.lastIncludeTerm = lastIncludeTerm
-		// rf.commitIndex = lastIncludedIndex
-		// rf.lastApplied = lastIncludedIndex
+
+		// 2D crash test
+		rf.lastIncludeIndex = lastIncludedIndex
+		rf.lastIncludeTerm = lastIncludeTerm
+		rf.commitIndex = lastIncludedIndex
+		rf.lastApplied = lastIncludedIndex
 	}
 	// fmt.Printf("Restarting %v, logs %v", rf.me, len(rf.logs))
 }
@@ -186,7 +188,7 @@ func (rf *Raft) Snapshot(index int, snapshot []byte) {
 	// Your code here (2D).
 
 	rf.mu.Lock()
-	if index < rf.highestSnapShotIndex {
+	if index < rf.highestSnapShotIndex || index <= rf.lastIncludeIndex {
 		rf.mu.Unlock()
 		return
 	}
@@ -566,7 +568,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 		// if this server isn't the leader, returns false
 		isLeader = false
 		rf.mu.Unlock()
-	} else {
+	} else if rf.killed() == false {
 		isLeader = true
 		// the first return value is the index that the command will appear at
 		// if it's ever committed. the second return value is the current
@@ -625,17 +627,16 @@ func (rf *Raft) ticker() {
 		time.Sleep(timeoutPeriod / 3)
 		rf.mu.Lock()
 		if rf.state != Leader && time.Now().Sub(rf.lastHeartbeat) > rf.timeoutPeriod {
-			rf.mu.Unlock()
 			go func() {
 				rf.startElection()
 			}()
-
-			time.Sleep(3500 * time.Millisecond)
+			rf.mu.Unlock()
+			time.Sleep(1500 * time.Millisecond)
 		} else {
 			// time.Sleep(300 * time.Millisecond)
 			rf.mu.Unlock()
 		}
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 	}
 }
 
@@ -774,7 +775,7 @@ func (rf *Raft) actLeader(term int) {
 						args.LeaderId = rf.me
 						args.LastIncludedIndex = rf.lastIncludeIndex
 						args.LastIncludedTerm = rf.lastIncludeTerm
-						args.Data = rf.snapShot
+						args.Data = rf.persister.snapshot
 
 						rf.nextIndex[i] = args.LastIncludedIndex + 1
 
@@ -896,11 +897,10 @@ func (rf *Raft) actLeader(term int) {
 						rf.mu.Unlock()
 					}
 
-					time.Sleep(20 * time.Millisecond)
+					time.Sleep(3 * time.Millisecond)
 					rf.mu.Lock()
 					isLeader = (rf.state == Leader) && (rf.currentTerm == term)
 					rf.mu.Unlock()
-
 				}
 			}(idx, term)
 		}
@@ -917,7 +917,7 @@ func (rf *Raft) checkCommitment(term int) {
 	isLeader := (rf.state == Leader) && rf.currentTerm == term
 	rf.mu.Unlock()
 	for isLeader {
-		time.Sleep(15 * time.Millisecond)
+		time.Sleep(1 * time.Millisecond)
 		rf.mu.Lock()
 
 		// check commitment status, from commitIndex to end
@@ -961,31 +961,28 @@ func (rf *Raft) applyEntry(i int) {
 
 func (rf *Raft) applyCommit() {
 	rf.mu.Lock()
-	if rf.lastApplied == rf.commitIndex {
-		rf.mu.Unlock()
-		return
-	}
 	// fmt.Printf("%v is applying index %v, %v, lastInclude %v\n", rf.me, rf.lastApplied, rf.commitIndex, rf.lastIncludeIndex)
-	applyMsgs := []ApplyMsg{}
+	// applyMsgs := []ApplyMsg{}
 	for i := rf.lastApplied + 1; i <= rf.commitIndex && !rf.killed(); i++ {
-		applyMsgs = append(applyMsgs, ApplyMsg{
+		/*applyMsgs = append(applyMsgs, ApplyMsg{
 			CommandValid: true,
 			Command:      rf.logs[i-1-rf.lastIncludeIndex].Command,
 			CommandIndex: rf.logs[i-1-rf.lastIncludeIndex].Index,
-		})
-		/*rf.applyCh <- ApplyMsg{
+		})*/
+		rf.applyCh <- ApplyMsg{
 			CommandValid: true,
 			Command:      rf.logs[i-1-rf.lastIncludeIndex].Command,
 			CommandIndex: rf.logs[i-1-rf.lastIncludeIndex].Index,
-		}*/
+			SnapshotTerm: rf.logs[i-1-rf.lastIncludeIndex].Term,
+		}
 		// fmt.Printf("%v: Index: %v, Command: %v\n", rf.me, rf.logs[i-1-rf.lastIncludeIndex].Index, rf.logs[i-1-rf.lastIncludeIndex].Command)
 	}
 	rf.lastApplied = rf.commitIndex
 	rf.mu.Unlock()
 
-	for _, applymsg := range applyMsgs {
+	/*for _, applymsg := range applyMsgs {
 		rf.applyCh <- applymsg
-	}
+	}*/
 
 	// fmt.Printf("Now %v has commit and applied index %v\n", rf.me, rf.commitIndex)
 }
@@ -993,7 +990,7 @@ func (rf *Raft) applyCommit() {
 func (rf *Raft) checkApply() {
 	for rf.killed() == false {
 		rf.applyCommit()
-		time.Sleep(15 * time.Millisecond)
+		time.Sleep(1 * time.Millisecond)
 	}
 }
 
@@ -1043,7 +1040,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	}()*/
 	rf.readPersist(rf.persister.raftstate)
 
-	time.Sleep(250 * time.Millisecond)
+	time.Sleep(50 * time.Millisecond)
 
 	go rf.ticker()
 

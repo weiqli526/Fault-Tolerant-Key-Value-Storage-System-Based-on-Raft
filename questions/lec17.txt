@@ -1,0 +1,4 @@
+In the Parameter Server architecture, worker machines do not talk to each other directly but only through the parameter servers. Why is this design choice beneficial for distributed machine learning?
+
+Answer: 
+This design choice simplifies the development of distributed machine learning applications and allows an optimization of the updates.
