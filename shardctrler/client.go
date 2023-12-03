@@ -14,6 +14,9 @@ import (
 type Clerk struct {
 	servers []*labrpc.ClientEnd
 	// Your data here.
+	leaderId int
+	ckId     int64 // clerk unique id
+	seqId    int   // request seq id
 }
 
 func nrand() int64 {
@@ -27,13 +30,18 @@ func MakeClerk(servers []*labrpc.ClientEnd) *Clerk {
 	ck := new(Clerk)
 	ck.servers = servers
 	// Your code here.
+	ck.ckId = nrand()
+	ck.seqId = 0
 	return ck
 }
 
 func (ck *Clerk) Query(num int) Config {
 	args := &QueryArgs{}
 	// Your code here.
+	ck.seqId += 1
 	args.Num = num
+	args.ClientId = ck.ckId
+	args.Seq = ck.seqId
 	for {
 		// try each known server.
 		for _, srv := range ck.servers {
@@ -50,6 +58,9 @@ func (ck *Clerk) Query(num int) Config {
 func (ck *Clerk) Join(servers map[int][]string) {
 	args := &JoinArgs{}
 	// Your code here.
+	ck.seqId += 1
+	args.ClientId = ck.ckId
+	args.Seq = ck.seqId
 	args.Servers = servers
 
 	for {
@@ -68,6 +79,9 @@ func (ck *Clerk) Join(servers map[int][]string) {
 func (ck *Clerk) Leave(gids []int) {
 	args := &LeaveArgs{}
 	// Your code here.
+	ck.seqId += 1
+	args.ClientId = ck.ckId
+	args.Seq = ck.seqId
 	args.GIDs = gids
 
 	for {
@@ -86,6 +100,9 @@ func (ck *Clerk) Leave(gids []int) {
 func (ck *Clerk) Move(shard int, gid int) {
 	args := &MoveArgs{}
 	// Your code here.
+	ck.seqId += 1
+	args.ClientId = ck.ckId
+	args.Seq = ck.seqId
 	args.Shard = shard
 	args.GID = gid
 

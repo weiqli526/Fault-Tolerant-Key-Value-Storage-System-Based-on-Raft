@@ -1,0 +1,3 @@
+How do virtual nodes (tokens) facilitate load balancing in Dynamo?
+
+Answer: By using virtual nodes, each node can be responsible for multiple positions in the ring. If a node becomes unavailable (due to failures or routine maintenance), the load handled by this node is evenly dispersed across the remaining available nodes. And when a node becomes available again, or a new node is added to the system, the newly available node accepts a roughly equivalent amount of load from each of the other available nodes. This helps reduce the cost of load balancing when configuration changes.
