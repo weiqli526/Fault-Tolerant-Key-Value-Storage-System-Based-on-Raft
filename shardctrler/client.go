@@ -27,6 +27,7 @@ func nrand() int64 {
 }
 
 func MakeClerk(servers []*labrpc.ClientEnd) *Clerk {
+	// fmt.Printf("Make Clerk\n")
 	ck := new(Clerk)
 	ck.servers = servers
 	// Your code here.
