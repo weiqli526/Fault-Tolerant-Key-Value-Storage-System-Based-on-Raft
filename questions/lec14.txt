@@ -1,4 +1,0 @@
-Q. Which mechanisms we have already discussed in the course does Wormhole use to guarantee message delivery?
-
-A. At least once delivery. All updates are guaranteed to be delivered at
-least once, and applications can handle multiple deliveries by recording and removing duplicates (at most once). 

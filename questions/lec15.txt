@@ -1,4 +1,0 @@
-Does Borg handle master failures the same way as worker machine failures? Explain your answer.
-
-A:  No. When a worker machine fails, its task will be reassigned by the scheduler. The Borgmaster is logically a single process but is actually replicated five times. When a master fails, a new Paxos leader will be elected. When a replica recovers from
-an outage, it dynamically re-synchronizes its state from other Paxos replicas that are up-to-date.

@@ -1,4 +1,0 @@
-Q. Consider a social media user whose profile consists of k data records stored in PNUTS. The user makes a series of changes to their profile. PNUTS guarantees that all clients will be able to see these changes at some point in the future. Will clients see the changes in the same or different orders? Explain why.
-
-A. Clients are not guaranteed to see the changes in the same orders. According to PNUTS's record-level mastering mechanism, mastership is assigned on a record-by-record basis, and the updates published by a record¡¯s master
-to a single YMB cluster are delivered in the published order to other replicas. However, the k data records may not be mastered in the same cluster, so the orders clients see are not guaranteed.
